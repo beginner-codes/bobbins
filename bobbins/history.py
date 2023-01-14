@@ -11,7 +11,13 @@ from bobbins.plugin import Plugin
 class HistoryPlugin(Plugin):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.history: dict[int, set[int]] = defaultdict(set)
+        self.guild_indexes: dict[int, dict[int, set[int]]] = defaultdict(
+            _create_guild_index
+        )
+
+
+def _create_guild_index() -> dict[int, set[int]]:
+    return defaultdict(set)
 
 
 history_plugin = HistoryPlugin("HistoryPlugin")
@@ -22,20 +28,28 @@ async def on_new_thread_created(event: channel_events.GuildThreadCreateEvent):
     if event.thread.parent_id != history_plugin.help_forum_id:
         return
 
-    history_plugin.history[event.thread.owner_id].add(event.thread.id)
+    history_plugin.guild_indexes[event.guild_id][event.thread.owner_id].add(
+        event.thread.id
+    )
 
 
 @history_plugin.listener(hikari.GuildAvailableEvent)
-async def on_bot_started(event: hikari.StartedEvent):
+async def on_guild_available(event: hikari.GuildAvailableEvent):
     forum: hikari.GuildForumChannel = cast(
         hikari.GuildForumChannel,
         await event.app.rest.fetch_channel(history_plugin.help_forum_id),
     )
-    guild = forum.get_guild()
-    posts = await guild.app.rest.fetch_active_threads(guild)
-    for post in posts:
+    guild = event.guild
+    active_posts = await guild.app.rest.fetch_active_threads(guild)
+    index = history_plugin.guild_indexes[guild.id] = _create_guild_index()
+    for post in active_posts:
         if post.parent_id == history_plugin.help_forum_id:
-            history_plugin.history[post.owner_id].add(post.id)
+            index[post.owner_id].add(post.id)
+
+
+@history_plugin.listener(hikari.GuildLeaveEvent)
+async def on_guild_leave(event: hikari.GuildLeaveEvent):
+    del history_plugin.guild_indexes[event.guild_id]
 
 
 @history_plugin.command
@@ -75,8 +89,12 @@ async def _show_posts_history(
     message = (
         f"{user.mention} has no recent help posts in <#{history_plugin.help_forum_id}>."
     )
-    if post_history := history_plugin.history.get(user.id):
-        post_list = "\n-".join(f"<#{post_id}>" for post_id in post_history)
+    if (
+        ctx.guild_id in history_plugin.guild_indexes
+        and user.id not in history_plugin.guild_indexes[ctx.guild_id]
+    ):
+        post_history = history_plugin.guild_indexes[ctx.guild_id][user.id]
+        post_list = "\n-".join(f"<#{post_id}>" for post_id in post_history[:10])
         message = f"{user.mention} has recently opened these help posts:\n-{post_list}"
 
     await ctx.respond(message, flags=flags)
