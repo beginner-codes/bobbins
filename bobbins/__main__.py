@@ -4,7 +4,7 @@ import lightbulb
 import bobbins.checks
 import bobbins.cli
 import bobbins.config
-import bobbins.post_commands
+import bobbins.history
 
 args = bobbins.cli.parser.parse_args()
 if args.config:
@@ -35,6 +35,9 @@ async def check_forum_post(ctx: lightbulb.ApplicationContext):
 bot = lightbulb.BotApp(token=config["token"])
 bobbins.post_commands.post_plugin.add_checks(check_forum_post)
 bot.add_plugin(bobbins.post_commands.post_plugin)
+
+bobbins.history.history_plugin.help_forum_id = config["forumID"]
+bot.add_plugin(bobbins.history.history_plugin)
 
 
 bot.run()
