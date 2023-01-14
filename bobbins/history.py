@@ -87,7 +87,7 @@ async def _show_posts_history(
     )
     if (
         ctx.guild_id in history_plugin.guild_indexes
-        and user.id not in history_plugin.guild_indexes[ctx.guild_id]
+        and user.id in history_plugin.guild_indexes[ctx.guild_id]
     ):
         post_history = history_plugin.guild_indexes[ctx.guild_id][user.id]
         post_list = "\n-".join(f"<#{post_id}>" for post_id in islice(post_history, 10))
