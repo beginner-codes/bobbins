@@ -1,5 +1,4 @@
 from collections import defaultdict
-from typing import cast
 
 import hikari
 import lightbulb
@@ -35,10 +34,6 @@ async def on_new_thread_created(event: channel_events.GuildThreadCreateEvent):
 
 @history_plugin.listener(hikari.GuildAvailableEvent)
 async def on_guild_available(event: hikari.GuildAvailableEvent):
-    forum: hikari.GuildForumChannel = cast(
-        hikari.GuildForumChannel,
-        await event.app.rest.fetch_channel(history_plugin.help_forum_id),
-    )
     guild = event.guild
     active_posts = await guild.app.rest.fetch_active_threads(guild)
     index = history_plugin.guild_indexes[guild.id] = _create_guild_index()
