@@ -15,6 +15,9 @@ else:
 
 @bobbins.checks.slash_check
 async def check_forum_post(ctx: lightbulb.ApplicationContext):
+    if ctx.command.name == "help":
+        return True
+
     channel: hikari.GuildChannel = ctx.get_channel()
     is_forum = True
     if channel.type != hikari.ChannelType.GUILD_PUBLIC_THREAD:
@@ -32,6 +35,7 @@ async def check_forum_post(ctx: lightbulb.ApplicationContext):
     return is_forum
 
 
+bot = lightbulb.BotApp(token=config["token"], help_slash_command=True)
 bobbins.post_commands.post_plugin.add_checks(check_forum_post)
 bot.add_plugin(bobbins.post_commands.post_plugin)
 
