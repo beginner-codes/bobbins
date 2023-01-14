@@ -25,7 +25,7 @@ async def on_new_thread_created(event: channel_events.GuildThreadCreateEvent):
     history_plugin.history[event.thread.owner_id].add(event.thread.id)
 
 
-@history_plugin.listener(hikari.StartedEvent)
+@history_plugin.listener(hikari.GuildAvailableEvent)
 async def on_bot_started(event: hikari.StartedEvent):
     forum: hikari.GuildForumChannel = cast(
         hikari.GuildForumChannel,
@@ -47,13 +47,31 @@ async def on_bot_started(event: hikari.StartedEvent):
 )
 @lightbulb.command("posts", "Shows a user's recent help post history")
 @lightbulb.implements(lightbulb.SlashCommand)
-async def posts(ctx: lightbulb.ApplicationContext) -> None:
-    user = ctx.author
-    flags = hikari.MessageFlag.EPHEMERAL
+async def posts(ctx: lightbulb.SlashContext):
+    user = ctx.user
+    ephemeral = True
     if ctx.options.user is not None:
         user = ctx.options.user
-        flags = hikari.MessageFlag.NONE
+        ephemeral = False
 
+    await _show_posts_history(ctx, user, ephemeral)
+
+
+@history_plugin.command
+@lightbulb.command("Recent Help Posts", "Shows a user's recent help post history")
+@lightbulb.implements(lightbulb.UserCommand)
+async def user_menu_posts_list(ctx: lightbulb.UserContext):
+    await _show_posts_history(
+        ctx, ctx.options.target.user, ctx.user.id == ctx.options.target.user.id
+    )
+
+
+async def _show_posts_history(
+    ctx: lightbulb.ApplicationContext | lightbulb.UserContext,
+    user: hikari.User,
+    ephemeral: bool,
+) -> None:
+    flags = hikari.MessageFlag.EPHEMERAL if ephemeral else hikari.MessageFlag.NONE
     message = (
         f"{user.mention} has no recent help posts in <#{history_plugin.help_forum_id}>."
     )
