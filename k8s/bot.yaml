@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bobbins-bot
+  labels:
+    app: bobbins-bot
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bobbins-bot
+  template:
+    metadata:
+      labels:
+        app: bobbins-bot
+    spec:
+      containers:
+        - name: bobbins-bot
+          image: zzmmrmn/bobbins-bot:<IMAGE_VERSION>
+          envFrom:
+            - configMapRef:
+                name: bobbins-bot-config
+            - secretRef:
+                name: bobbins-bot-secrets
+          env:
+            - name: PRODUCTION_BOT
+              value: "PRODUCTION"
+            - name: "BOT_IMAGE_VERSION"
+              value: "<IMAGE_VERSION>"
