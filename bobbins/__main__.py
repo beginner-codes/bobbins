@@ -5,6 +5,7 @@ import bobbins.checks
 import bobbins.cli
 import bobbins.config
 import bobbins.history
+import bobbins.post_commands
 
 args = bobbins.cli.parser.parse_args()
 if args.config:
