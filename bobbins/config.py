@@ -1,4 +1,5 @@
 import json
+import os
 from pathlib import Path
 from typing import TypedDict
 
@@ -22,6 +23,31 @@ def load(config_path: Path) -> ConfigDict:
             ) from exc
 
     return _process_config(config)
+
+
+def load_env() -> ConfigDict:
+    config = {}
+    if "DISCORD_TOKEN" not in os.environ:
+        raise bobbins.exceptions.RequiredEnvironmentVariableIsNotSet(
+            "The Discord bot token could not be found in the DISCORD_TOKEN environment variable."
+        )
+
+    if "DISCORD_FORUM_ID" not in os.environ:
+        raise bobbins.exceptions.RequiredEnvironmentVariableIsNotSet(
+            "The Discord Forum Channel ID could not be found in the DISCORD_FORUM_ID environment variable."
+        )
+
+    try:
+        config = {
+            "token": os.environ["DISCORD_TOKEN"],
+            "forumID": int(os.environ["DISCORD_FORUM_ID"]),
+        }
+    except ValueError as exc:
+        raise bobbins.exceptions.ProvidedForumChannelIDIsInvalid(
+            f"The forum channel ID {config['forumID']!r} is not a valid type for a channel ID."
+        ) from exc
+
+    return config
 
 
 def _process_config(config: ConfigDict) -> ConfigDict:
