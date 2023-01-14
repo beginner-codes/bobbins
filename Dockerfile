@@ -15,6 +15,6 @@ WORKDIR /usr/src/app
 RUN mkdir -p /usr/src/app/tmp
 ENV TMPDIR /usr/src/app/tmp
 
-COPY bobbins .
+COPY ./bobbins ./bobbins
 
 CMD ["poetry", "run", "python", "-u", "-m", "bobbins"]
