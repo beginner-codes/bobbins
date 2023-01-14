@@ -4,7 +4,7 @@ import hikari
 import lightbulb
 import lightbulb.utils as lbutils
 
-post_plugin = lightbulb.Plugin("PostCommandsPlugin")
+post_plugin = lightbulb.Plugin("Posts")
 
 
 def _is_forum_mod(
@@ -45,7 +45,7 @@ async def close(ctx: lightbulb.ApplicationContext) -> None:
 
 
 @post_plugin.command
-@lightbulb.command("lock", "Locks a help post")
+@lightbulb.command("lock", "Locks a help post", hidden=True)
 @lightbulb.implements(lightbulb.SlashCommand)
 async def lock(ctx: lightbulb.ApplicationContext) -> None:
     channel: hikari.GuildPublicThread = cast(

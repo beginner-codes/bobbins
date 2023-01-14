@@ -8,7 +8,7 @@ from hikari.events import channel_events
 from bobbins.plugin import Plugin
 
 
-class HistoryPlugin(Plugin):
+class RecentPostsPlugin(Plugin):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.guild_indexes: dict[int, dict[int, set[int]]] = defaultdict(
@@ -20,35 +20,35 @@ def _create_guild_index() -> dict[int, set[int]]:
     return defaultdict(set)
 
 
-history_plugin = HistoryPlugin("HistoryPlugin")
+recent_posts_plugin = RecentPostsPlugin("Recent Posts")
 
 
-@history_plugin.listener(channel_events.GuildThreadCreateEvent)
+@recent_posts_plugin.listener(channel_events.GuildThreadCreateEvent)
 async def on_new_thread_created(event: channel_events.GuildThreadCreateEvent):
-    if event.thread.parent_id != history_plugin.help_forum_id:
+    if event.thread.parent_id != recent_posts_plugin.help_forum_id:
         return
 
-    history_plugin.guild_indexes[event.guild_id][event.thread.owner_id].add(
+    recent_posts_plugin.guild_indexes[event.guild_id][event.thread.owner_id].add(
         event.thread.id
     )
 
 
-@history_plugin.listener(hikari.GuildAvailableEvent)
+@recent_posts_plugin.listener(hikari.GuildAvailableEvent)
 async def on_guild_available(event: hikari.GuildAvailableEvent):
     guild = event.guild
     active_posts = await guild.app.rest.fetch_active_threads(guild)
-    index = history_plugin.guild_indexes[guild.id] = _create_guild_index()
+    index = recent_posts_plugin.guild_indexes[guild.id] = _create_guild_index()
     for post in active_posts:
-        if post.parent_id == history_plugin.help_forum_id:
+        if post.parent_id == recent_posts_plugin.help_forum_id:
             index[post.owner_id].add(post.id)
 
 
-@history_plugin.listener(hikari.GuildLeaveEvent)
+@recent_posts_plugin.listener(hikari.GuildLeaveEvent)
 async def on_guild_leave(event: hikari.GuildLeaveEvent):
-    del history_plugin.guild_indexes[event.guild_id]
+    del recent_posts_plugin.guild_indexes[event.guild_id]
 
 
-@history_plugin.command
+@recent_posts_plugin.command
 @lightbulb.option(
     "user",
     "The name of the user to get the post history for",
@@ -67,7 +67,7 @@ async def posts(ctx: lightbulb.SlashContext):
     await _show_posts_history(ctx, user, ephemeral)
 
 
-@history_plugin.command
+@recent_posts_plugin.command
 @lightbulb.command("Recent Help Posts", "Shows a user's recent help post history")
 @lightbulb.implements(lightbulb.UserCommand)
 async def user_menu_posts_list(ctx: lightbulb.UserContext):
@@ -82,14 +82,12 @@ async def _show_posts_history(
     ephemeral: bool,
 ) -> None:
     flags = hikari.MessageFlag.EPHEMERAL if ephemeral else hikari.MessageFlag.NONE
-    message = (
-        f"{user.mention} has no recent help posts in <#{history_plugin.help_forum_id}>."
-    )
+    message = f"{user.mention} has no recent help posts in <#{recent_posts_plugin.help_forum_id}>."
     if (
-        ctx.guild_id in history_plugin.guild_indexes
-        and user.id in history_plugin.guild_indexes[ctx.guild_id]
+        ctx.guild_id in recent_posts_plugin.guild_indexes
+        and user.id in recent_posts_plugin.guild_indexes[ctx.guild_id]
     ):
-        post_history = history_plugin.guild_indexes[ctx.guild_id][user.id]
+        post_history = recent_posts_plugin.guild_indexes[ctx.guild_id][user.id]
         post_list = "\n-".join(f"<#{post_id}>" for post_id in islice(post_history, 10))
         message = f"{user.mention} has recently opened these help posts:\n-{post_list}"
 
