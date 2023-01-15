@@ -15,9 +15,7 @@ class Bot(lightbulb.BotApp):
 
     def __init__(self, *args, **kwargs):
         self.config = self._load_config()
-        self.db = bobbins.database.Database(
-            self.config.get("DATABASE", "sqlite+aiosqlite:///")
-        )
+        self.db = bobbins.database.Database(self.config["database"])
         super().__init__(token=self.config["token"], *args, **kwargs)
 
         self.listen(hikari.StartedEvent, self.on_started)

@@ -6,7 +6,7 @@ from typing import TypedDict
 import bobbins.exceptions
 
 ConfigDict = TypedDict(
-    "ConfigDict", {"token": str, "forumID": int | str, "DATABASE": str | None}
+    "ConfigDict", {"token": str, "forumID": int | str, "database": str | None}
 )
 
 
@@ -43,13 +43,14 @@ def load_env() -> ConfigDict:
         config = {
             "token": os.environ["DISCORD_TOKEN"],
             "forumID": int(os.environ["DISCORD_FORUM_ID"]),
+            "database": os.environ.get("DATABASE_URI", None),
         }
     except ValueError as exc:
         raise bobbins.exceptions.ProvidedForumChannelIDIsInvalid(
             f"The forum channel ID {config['forumID']!r} is not a valid type for a channel ID."
         ) from exc
 
-    return config
+    return _process_config(config)
 
 
 def _process_config(config: ConfigDict) -> ConfigDict:
@@ -63,5 +64,8 @@ def _process_config(config: ConfigDict) -> ConfigDict:
         raise bobbins.exceptions.ProvidedForumChannelIDIsInvalid(
             f"The forum channel ID {config['forumID']!r} is not a valid type for a channel ID."
         ) from exc
+
+    if config.get("database", None) is None:
+        config["database"] = "sqlite+aiosqlite:///bobbins.db"
 
     return config
