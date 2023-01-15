@@ -5,7 +5,9 @@ from typing import TypedDict
 
 import bobbins.exceptions
 
-ConfigDict = TypedDict("ConfigDict", {"token": str, "forumID": int | str})
+ConfigDict = TypedDict(
+    "ConfigDict", {"token": str, "forumID": int | str, "DATABASE": str | None}
+)
 
 
 def load(config_path: Path) -> ConfigDict:

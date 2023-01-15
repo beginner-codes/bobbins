@@ -10,7 +10,13 @@ readme = "README.md"
 python = ">=3.8.0,<3.12"
 hikari = "^2.0.0.dev115"
 hikari-lightbulb = "^2.3.1"
+sqlalchemy = "2.0.0rc2"
+psycopg = "^3.1.7"
+greenlet = "^2.0.1"
 
+
+[tool.poetry.group.dev.dependencies]
+aiosqlite = "^0.18.0"
 
 [build-system]
 requires = ["poetry-core"]
