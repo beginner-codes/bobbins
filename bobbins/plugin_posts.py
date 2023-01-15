@@ -4,7 +4,10 @@ import hikari
 import lightbulb
 import lightbulb.utils as lbutils
 
+import bobbins.checks
+
 post_plugin = lightbulb.Plugin("Posts")
+post_plugin.add_checks(bobbins.checks.threads_only)
 
 
 def _is_forum_mod(
