@@ -1,5 +1,4 @@
 from collections import defaultdict
-from itertools import islice
 
 import hikari
 import lightbulb
@@ -88,7 +87,9 @@ async def _show_posts_history(
         and user.id in recent_posts_plugin.guild_indexes[ctx.guild_id]
     ):
         post_history = recent_posts_plugin.guild_indexes[ctx.guild_id][user.id]
-        post_list = "\n-".join(f"<#{post_id}>" for post_id in islice(post_history, 10))
+        post_list = "\n-".join(
+            f"<#{post_id}>" for post_id in sorted(post_history, reverse=True)[:10]
+        )
         message = f"{user.mention} has recently opened these help posts:\n-{post_list}"
 
     await ctx.respond(message, flags=flags)
