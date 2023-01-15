@@ -16,6 +16,7 @@ class Bot(lightbulb.BotApp):
     def __init__(self, *args, **kwargs):
         self.config = self._load_config()
         self.db = bobbins.database.Database(self.config["database"])
+        self.__db_failure = False
         super().__init__(token=self.config["token"], *args, **kwargs)
 
         self.listen(hikari.StartedEvent, self.on_started)
@@ -36,7 +37,11 @@ class Bot(lightbulb.BotApp):
         return cmd
 
     async def on_started(self, _):
-        await self.db.connect()
+        try:
+            await self.db.connect()
+        except Exception:
+            self.__db_failure = True
+            raise
 
     async def on_stopped(self, _):
         await self.db.disconnect()
