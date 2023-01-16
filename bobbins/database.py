@@ -34,7 +34,7 @@ class Database:
 
     async def disconnect(self):
         if self.__connection:
-            await self.__connection.dispose()
+            await self.__connection.close()
 
     async def update_tables(self):
         async with self.__db.begin() as conn:
