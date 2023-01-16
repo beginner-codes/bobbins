@@ -39,6 +39,7 @@ class Bot(lightbulb.BotApp):
     async def on_started(self, _):
         try:
             await self.db.connect()
+            print("CONNECTED", self.db)
         except Exception:
             self.__db_failure = True
             raise
