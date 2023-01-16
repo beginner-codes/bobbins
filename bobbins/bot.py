@@ -19,8 +19,8 @@ class Bot(lightbulb.BotApp):
         self.__db_failure = False
         super().__init__(token=self.config["token"], *args, **kwargs)
 
-        self.listen(hikari.StartedEvent, self.on_started)
-        self.listen(hikari.StoppedEvent, self.on_stopped)
+        self.listen(hikari.StartedEvent)(self.on_started)
+        self.listen(hikari.StoppedEvent)(self.on_stopped)
         self.command(self.admin_setup, True)
 
     def command(
