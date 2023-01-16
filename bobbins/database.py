@@ -42,3 +42,6 @@ class Database:
 
     def new_session(self) -> AsyncSession:
         return self.__session_maker()
+
+    def __repr__(self):
+        return f"<Database {self.__db.url}>"
