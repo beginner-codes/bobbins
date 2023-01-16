@@ -1,3 +1,4 @@
+import logging
 from types import MethodType
 from typing import Callable
 
@@ -8,6 +9,8 @@ import lightbulb.utils as lbutils
 import bobbins.cli
 import bobbins.config
 import bobbins.database
+
+_LOGGER: logging.Logger = logging.getLogger("bobbins")
 
 
 class Bot(lightbulb.BotApp):
@@ -39,7 +42,7 @@ class Bot(lightbulb.BotApp):
     async def on_started(self, _):
         try:
             await self.db.connect()
-            print("CONNECTED", self.db)
+            _LOGGER.info(f"Connected {self.db}")
         except Exception:
             self.__db_failure = True
             raise
