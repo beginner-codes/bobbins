@@ -11,8 +11,8 @@ python = ">=3.8.0,<3.12"
 hikari = "^2.0.0.dev115"
 hikari-lightbulb = "^2.3.1"
 sqlalchemy = "2.0.0rc2"
-psycopg = "^3.1.7"
 greenlet = "^2.0.1"
+psycopg = {extras = ["binary"], version = "^3.1.7"}
 
 
 [tool.poetry.group.dev.dependencies]
