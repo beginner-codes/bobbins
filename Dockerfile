@@ -17,4 +17,4 @@ ENV TMPDIR /usr/src/app/tmp
 
 COPY ./bobbins ./bobbins
 
-CMD ["poetry", "run", "python", "-u", "-m", "bobbins"]
+CMD ["poetry", "run", "python", "-OO", "-u", "-m", "bobbins"]
