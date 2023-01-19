@@ -23,15 +23,13 @@ recent_posts_plugin = RecentPostsPlugin("Recent Posts")
 
 
 @recent_posts_plugin.bound_listener(channel_events.GuildThreadCreateEvent)
-async def on_new_thread_created(
+async def on_thread_created(
     plugin: RecentPostsPlugin, event: channel_events.GuildThreadCreateEvent
 ):
     if event.thread.parent_id != plugin.app.config["forumID"]:
         return
 
-    recent_posts_plugin.guild_indexes[event.guild_id][event.thread.owner_id].add(
-        event.thread.id
-    )
+    plugin.guild_indexes[event.guild_id][event.thread.owner_id].add(event.thread.id)
 
 
 @recent_posts_plugin.bound_listener(channel_events.GuildThreadDeleteEvent)
