@@ -18,9 +18,9 @@ def _is_forum_mod(
 
 
 @post_plugin.command
+@lightbulb.decorators.add_cooldown(50, 1, lightbulb.UserBucket, lightbulb.SlidingWindowCooldownAlgorithm)
 @lightbulb.command("close", "Close your help post")
 @lightbulb.implements(lightbulb.SlashCommand)
-@lightbulb.decorators.add_cooldown(50, 1, lightbulb.UserBucket, lightbulb.SlidingWindowCooldownAlgorithm)
 async def close(ctx: lightbulb.ApplicationContext) -> None:
     channel: hikari.GuildPublicThread = cast(
         hikari.GuildPublicThread, ctx.get_channel()
