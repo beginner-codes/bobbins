@@ -18,7 +18,7 @@ def _is_forum_mod(
 
 
 @post_plugin.command
-@lightbulb.decorators.add_cooldown(50, 1, lightbulb.UserBucket, lightbulb.SlidingWindowCooldownAlgorithm)
+@lightbulb.decorators.add_cooldown(60, 2, lightbulb.UserBucket, lightbulb.SlidingWindowCooldownAlgorithm)
 @lightbulb.command("close", "Close your help post")
 @lightbulb.implements(lightbulb.SlashCommand)
 async def close(ctx: lightbulb.ApplicationContext) -> None:
