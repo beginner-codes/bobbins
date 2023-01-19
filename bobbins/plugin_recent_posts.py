@@ -34,6 +34,16 @@ async def on_new_thread_created(
     )
 
 
+@recent_posts_plugin.bound_listener(channel_events.GuildThreadDeleteEvent)
+async def on_thread_deleted(
+    plugin: RecentPostsPlugin, event: channel_events.GuildThreadDeleteEvent
+):
+    if event.thread.parent_id != plugin.app.config["forumID"]:
+        return
+
+    plugin.guild_indexes[event.guild_id][event.thread.owner_id].remove(event.thread.id)
+
+
 @recent_posts_plugin.bound_listener(hikari.GuildAvailableEvent)
 async def on_guild_available(
     plugin: RecentPostsPlugin, event: hikari.GuildAvailableEvent
