@@ -68,6 +68,12 @@ class Bot(lightbulb.BotApp):
             )
             return
 
+        if self.__db_failure:
+            await ctx.respond(
+                f"⚠️ **Critical Failure** ⚠️\nThe database failed to connect."
+            )
+            return
+
         try:
             await self.db.update_tables()
         except Exception as exc:
@@ -75,6 +81,7 @@ class Bot(lightbulb.BotApp):
             raise
         else:
             await ctx.respond("The Bobbins database tables have been updated")
+
     @staticmethod
     def _load_config() -> bobbins.config.ConfigDict:
         args = bobbins.cli.parser.parse_args()
