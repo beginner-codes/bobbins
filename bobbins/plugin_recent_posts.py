@@ -1,4 +1,6 @@
+import asyncio
 from collections import defaultdict
+from typing import cast, TypeAlias
 
 import hikari
 import lightbulb
@@ -6,20 +8,61 @@ from hikari.events import channel_events
 
 from bobbins.plugin import Plugin
 
+GuildID: TypeAlias = int
+UserID: TypeAlias = int
+PostID: TypeAlias = int
+GuildIndex: TypeAlias = dict[UserID, set[PostID]]
+GuildIndexes: TypeAlias = dict[GuildID, GuildIndex]
+
 
 class RecentPostsPlugin(Plugin):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.guild_indexes: dict[int, dict[int, set[int]]] = defaultdict(
-            _create_guild_index
-        )
+        self.guild_indexes: GuildIndexes = defaultdict(_create_guild_index)
 
 
-def _create_guild_index() -> dict[int, set[int]]:
+def _create_guild_index() -> GuildIndex:
     return defaultdict(set)
 
 
 recent_posts_plugin = RecentPostsPlugin("Recent Posts")
+
+
+@recent_posts_plugin.bound_listener(hikari.MemberDeleteEvent)
+async def on_member_leave(plugin: RecentPostsPlugin, event: hikari.MemberDeleteEvent):
+    if event.user.id not in plugin.guild_indexes[event.guild_id]:
+        return
+
+    await _close_open_posts(event.get_guild(), event.user, plugin.guild_indexes)
+    _clear_guild_index_for_user(event.guild_id, event.user, plugin.guild_indexes)
+
+
+async def _close_open_posts(
+    guild: hikari.Guild, user: hikari.User, indexes: GuildIndexes
+):
+    tasks = []
+    for post_id in indexes[guild.id][user.id]:
+        post: hikari.GuildThreadChannel = cast(
+            hikari.GuildThreadChannel, await guild.app.rest.fetch_channel(post_id)
+        )
+        if post.is_archived:
+            continue
+
+        tasks.append(_close_post(post))
+
+    await asyncio.gather(*tasks)
+
+
+async def _close_post(post: hikari.GuildThreadChannel):
+    await post.send("ℹ️ The member has left the server. Closing post.")
+    await asyncio.sleep(5)
+    await post.app.rest.edit_channel(post, archived=True)
+
+
+def _clear_guild_index_for_user(
+    guild_id: GuildID, user: hikari.User, indexes: GuildIndexes
+):
+    del indexes[guild_id][user.id]
 
 
 @recent_posts_plugin.bound_listener(channel_events.GuildThreadCreateEvent)
