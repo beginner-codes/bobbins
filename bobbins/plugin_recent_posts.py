@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from typing import cast, Generator, Iterable, TypeAlias
@@ -8,6 +9,8 @@ import lightbulb
 from hikari.events import channel_events
 
 from bobbins.plugin import Plugin
+
+_LOGGER: logging.Logger = logging.getLogger("bobbins.recents")
 
 GuildID: TypeAlias = int
 UserID: TypeAlias = int
@@ -35,6 +38,7 @@ async def on_member_leave(plugin: RecentPostsPlugin, event: hikari.MemberDeleteE
     if event.user.id not in plugin.guild_indexes[event.guild_id]:
         return
 
+    _LOGGER.debug("Member left guild, cleaning up index and closing their posts")
     await _close_open_posts(event.get_guild(), event.user, plugin.guild_indexes)
     _clear_guild_index_for_user(event.guild_id, event.user, plugin.guild_indexes)
 
@@ -56,6 +60,7 @@ async def _close_open_posts(
             )
         )
 
+    _LOGGER.debug(f"Closing {len(tasks)} posts because the user left")
     await asyncio.gather(*tasks)
 
 
@@ -72,6 +77,7 @@ async def on_thread_created(
     if event.thread.parent_id != plugin.app.config["forumID"]:
         return
 
+    _LOGGER.debug("Add a new post to the guild index")
     plugin.guild_indexes[event.guild_id][event.thread.owner_id].add(event.thread.id)
 
 
@@ -84,9 +90,11 @@ async def on_thread_updated(
 
     users_posts = plugin.guild_indexes[event.guild_id][event.thread.owner_id]
     if event.thread.id in users_posts and event.thread.is_archived:
+        _LOGGER.debug("Remove a closed post from the guild index")
         users_posts.remove(event.thread.id)
 
     elif event.thread.id not in users_posts and not event.thread.is_archived:
+        _LOGGER.debug("Add a reopened post to the guild index")
         users_posts.add(event.thread.id)
 
 
@@ -97,6 +105,7 @@ async def on_thread_deleted(
     if event.thread.parent_id != plugin.app.config["forumID"]:
         return
 
+    _LOGGER.debug("Remove a deleted post from the guild index")
     plugin.guild_indexes[event.guild_id][event.thread.owner_id].remove(event.thread.id)
 
 
@@ -107,6 +116,9 @@ async def on_guild_available(
     guild = event.guild
     forum_id = plugin.app.config["forumID"]
 
+    _LOGGER.info(
+        f"{guild.name!r} is now available: building index and scheduling post closings"
+    )
     active_posts = await guild.app.rest.fetch_active_threads(guild)
     plugin.guild_indexes[guild.id] = _build_guild_index(
         _filter_forum_posts(forum_id, active_posts)
@@ -143,6 +155,9 @@ async def _schedule_next_archive(posts: Iterable[hikari.GuildThreadChannel]):
         last_message = await post.fetch_message(post.last_message_id)
         last_messaged = now - last_message.created_at
         if last_messaged > timedelta(days=7):
+            _LOGGER.info(
+                f"Closing {post.name!r} in {post.get_guild().name!r} because it's too old"
+            )
             await _close_post(
                 post,
                 message.format(mention=f"<@{post.owner_id}>"),
@@ -179,12 +194,14 @@ def _archive_post(post: hikari.GuildThreadChannel, when: timedelta, message: str
         loop.create_task(task)
         loop.create_task(schedule())
 
+    _LOGGER.info(f"Scheduling to close {post.name!r} in {when}")
     timer = loop.call_at(when.total_seconds(), callback)
     recent_posts_plugin.guild_tasks[post.guild_id] = timer
 
 
 @recent_posts_plugin.listener(hikari.GuildLeaveEvent)
 async def on_guild_leave(event: hikari.GuildLeaveEvent):
+    _LOGGER.info(f"Left guild {event.old_guild.name!r}, cleaning up index")
     del recent_posts_plugin.guild_indexes[event.guild_id]
 
 
@@ -239,6 +256,7 @@ async def _show_posts_history(
 async def _close_post(
     post: hikari.GuildThreadChannel, message: str, *, lock: bool = False
 ):
+    _LOGGER.debug(f"Closing {post.name!r}")
     await post.send(message)
     await asyncio.sleep(5)
     await post.app.rest.edit_channel(post, archived=True, locked=lock)
