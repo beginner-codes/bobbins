@@ -168,11 +168,9 @@ async def _schedule_next_archive(posts: Iterable[hikari.GuildThreadChannel]):
                 message.format(mention=f"<@{post.owner_id}>"),
             )
 
-        elif (
-            next_post is None or now - last_message.created_at < next_post_last_messaged
-        ):
+        elif next_post is None or last_messaged > next_post_last_messaged:
             next_post = post
-            next_post_last_messaged = now - last_message.created_at
+            next_post_last_messaged = last_messaged
 
     if next_post is not None:
         _archive_post(
