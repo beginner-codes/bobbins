@@ -18,7 +18,9 @@ def _is_forum_mod(
 
 
 @post_plugin.command
-@lightbulb.decorators.add_cooldown(60, 2, lightbulb.UserBucket, lightbulb.SlidingWindowCooldownAlgorithm)
+@lightbulb.decorators.add_cooldown(
+    60, 2, lightbulb.UserBucket, lightbulb.SlidingWindowCooldownAlgorithm
+)
 @lightbulb.command("close", "Close your help post")
 @lightbulb.implements(lightbulb.SlashCommand)
 async def close(ctx: lightbulb.ApplicationContext) -> None:
@@ -43,7 +45,8 @@ async def close(ctx: lightbulb.ApplicationContext) -> None:
         return
 
     await ctx.respond(
-        f"<@!{channel.owner_id}> this post has been closed. Feel free to reopen it if you have any further questions."
+        f"ℹ️ <@!{channel.owner_id}> this post has been closed. Feel free to reopen it if you have any further "
+        f"questions."
     )
     await channel.app.rest.edit_channel(channel, archived=True)
 
@@ -71,6 +74,6 @@ async def lock(ctx: lightbulb.ApplicationContext) -> None:
         return
 
     await ctx.respond(
-        f"<@!{channel.owner_id}> this post has been locked by {ctx.author.mention}."
+        f"ℹ️ <@!{channel.owner_id}> this post has been locked by {ctx.author.mention}."
     )
     await channel.app.rest.edit_channel(channel, archived=True, locked=True)
