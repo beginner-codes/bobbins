@@ -193,9 +193,7 @@ def _archive_post(post: hikari.GuildThreadChannel, when: timedelta, message: str
         await _schedule_next_archive(_filter_forum_posts(forum_id, active_posts))
 
     def callback():
-        task = _close_post(
-            post,
-        )
+        task = _close_post(post, message)
         loop.create_task(task)
         loop.create_task(schedule())
 
