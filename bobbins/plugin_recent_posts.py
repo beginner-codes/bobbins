@@ -1,6 +1,6 @@
 import asyncio
 from collections import defaultdict
-from typing import cast, TypeAlias
+from typing import cast, Sequence, TypeAlias
 
 import hikari
 import lightbulb
@@ -105,11 +105,21 @@ async def on_guild_available(
     plugin: RecentPostsPlugin, event: hikari.GuildAvailableEvent
 ):
     guild = event.guild
+    forum_id = plugin.app.config["forumID"]
+
     active_posts = await guild.app.rest.fetch_active_threads(guild)
-    index = recent_posts_plugin.guild_indexes[guild.id] = _create_guild_index()
+    plugin.guild_indexes[guild.id] = _build_guild_index(forum_id, active_posts)
+
+
+def _build_guild_index(
+    forum_id: int, active_posts: Sequence[hikari.GuildThreadChannel]
+) -> GuildIndex:
+    index = _create_guild_index()
     for post in active_posts:
-        if post.parent_id == plugin.app.config["forumID"]:
+        if post.parent_id == forum_id:
             index[post.owner_id].add(post.id)
+
+    return index
 
 
 @recent_posts_plugin.listener(hikari.GuildLeaveEvent)
