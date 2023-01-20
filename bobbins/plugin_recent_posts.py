@@ -1,5 +1,6 @@
 import asyncio
 from collections import defaultdict
+from datetime import datetime, timedelta, timezone
 from typing import cast, Generator, Iterable, TypeAlias
 
 import hikari
@@ -19,6 +20,7 @@ class RecentPostsPlugin(Plugin):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.guild_indexes: GuildIndexes = defaultdict(_create_guild_index)
+        self.guild_tasks: dict[int, asyncio.TimerHandle] = {}
 
 
 def _create_guild_index() -> GuildIndex:
@@ -48,15 +50,13 @@ async def _close_open_posts(
         if post.is_archived:
             continue
 
-        tasks.append(_close_post(post))
+        tasks.append(
+            _close_post(
+                post, "ℹ️ The member has left the server. Closing post.", lock=True
+            )
+        )
 
     await asyncio.gather(*tasks)
-
-
-async def _close_post(post: hikari.GuildThreadChannel):
-    await post.send("ℹ️ The member has left the server. Closing post.")
-    await asyncio.sleep(5)
-    await post.app.rest.edit_channel(post, archived=True, locked=True)
 
 
 def _clear_guild_index_for_user(
@@ -112,6 +112,8 @@ async def on_guild_available(
         _filter_forum_posts(forum_id, active_posts)
     )
 
+    await _schedule_next_archive(_filter_forum_posts(forum_id, active_posts))
+
 
 def _filter_forum_posts(
     forum_id: int, posts: Iterable[hikari.GuildThreadChannel]
@@ -129,6 +131,58 @@ def _build_guild_index(active_posts: Iterable[hikari.GuildThreadChannel]) -> Gui
     return index
 
 
+async def _schedule_next_archive(posts: Iterable[hikari.GuildThreadChannel]):
+    next_post = None
+    next_post_last_messaged = timedelta(days=0)
+    now = datetime.utcnow().replace(tzinfo=timezone.utc)
+    message = (
+        "ℹ️ This post has been inactive for 7 days. {mention} feel free to reclaim this channel if you have any "
+        "further questions."
+    )
+    for post in posts:
+        last_message = await post.fetch_message(post.last_message_id)
+        last_messaged = now - last_message.created_at
+        if last_messaged > timedelta(days=7):
+            await _close_post(
+                post,
+                message.format(mention=f"<@{post.owner_id}>"),
+            )
+
+        elif (
+            next_post is None or now - last_message.created_at < next_post_last_messaged
+        ):
+            next_post = post
+            next_post_last_messaged = now - last_message.created_at
+
+    if next_post is not None:
+        _archive_post(
+            next_post,
+            timedelta(days=7) - next_post_last_messaged,
+            message.format(mention=f"<@{next_post.owner_id}>"),
+        )
+
+
+def _archive_post(post: hikari.GuildThreadChannel, when: timedelta, message: str):
+    loop = asyncio.get_running_loop()
+
+    async def schedule():
+        forum_id = recent_posts_plugin.app.config["forumID"]
+
+        guild = post.get_guild()
+        active_posts = await guild.app.rest.fetch_active_threads(guild)
+        await _schedule_next_archive(_filter_forum_posts(forum_id, active_posts))
+
+    def callback():
+        task = _close_post(
+            post,
+        )
+        loop.create_task(task)
+        loop.create_task(schedule())
+
+    timer = loop.call_at(when.total_seconds(), callback)
+    recent_posts_plugin.guild_tasks[post.guild_id] = timer
+
+
 @recent_posts_plugin.listener(hikari.GuildLeaveEvent)
 async def on_guild_leave(event: hikari.GuildLeaveEvent):
     del recent_posts_plugin.guild_indexes[event.guild_id]
@@ -143,7 +197,7 @@ async def on_guild_leave(event: hikari.GuildLeaveEvent):
 )
 @lightbulb.command("posts", "Shows a user's recent help post history")
 @lightbulb.implements(lightbulb.SlashCommand)
-async def posts(ctx: lightbulb.SlashContext):
+async def posts_command(ctx: lightbulb.SlashContext):
     user = ctx.user
     ephemeral = True
     if ctx.options.user is not None:
@@ -180,3 +234,11 @@ async def _show_posts_history(
         message = f"{user.mention} has recently opened these help posts:\n-{post_list}"
 
     await ctx.respond(message, flags=flags)
+
+
+async def _close_post(
+    post: hikari.GuildThreadChannel, message: str, *, lock: bool = False
+):
+    await post.send(message)
+    await asyncio.sleep(5)
+    await post.app.rest.edit_channel(post, archived=True, locked=lock)
