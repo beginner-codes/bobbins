@@ -152,8 +152,14 @@ async def _schedule_next_archive(posts: Iterable[hikari.GuildThreadChannel]):
         "further questions."
     )
     for post in posts:
-        last_message = await post.fetch_message(post.last_message_id)
-        last_messaged = now - last_message.created_at
+        try:
+            last_message = await post.fetch_message(post.last_message_id)
+        except hikari.errors.NotFoundError:
+            _LOGGER.info(f"{post.name!r} has no messages?")
+            last_messaged = now - post.created_at
+        else:
+            last_messaged = now - last_message.created_at
+
         if last_messaged > timedelta(days=7):
             _LOGGER.info(
                 f"Closing {post.name!r} in {post.get_guild().name!r} because it's too old"
