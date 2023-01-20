@@ -155,7 +155,6 @@ async def _schedule_next_archive(posts: Iterable[hikari.GuildThreadChannel]):
         try:
             last_message = await post.fetch_message(post.last_message_id)
         except hikari.errors.NotFoundError:
-            _LOGGER.info(f"{post.name!r} has no messages?")
             last_messaged = now - post.created_at
         else:
             last_messaged = now - last_message.created_at
