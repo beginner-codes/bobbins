@@ -188,7 +188,8 @@ def _archive_post(post: hikari.GuildThreadChannel, when: timedelta, message: str
 
         guild = post.get_guild()
         active_posts = await guild.app.rest.fetch_active_threads(guild)
-        await _schedule_next_archive(_filter_forum_posts(forum_id, active_posts))
+        _LOGGER.info(f"ARCHIVE {post.name}")
+        # await _schedule_next_archive(_filter_forum_posts(forum_id, active_posts))
 
     def callback():
         task = _close_post(post, message)
