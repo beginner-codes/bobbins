@@ -196,7 +196,7 @@ def _archive_post(post: hikari.GuildThreadChannel, when: timedelta, message: str
         loop.create_task(schedule())
 
     _LOGGER.info(f"Scheduling to close {post.name!r} in {when}")
-    timer = loop.call_at(when.total_seconds(), callback)
+    timer = loop.call_later(when.total_seconds(), callback)
     recent_posts_plugin.guild_tasks[post.guild_id] = timer
 
 
