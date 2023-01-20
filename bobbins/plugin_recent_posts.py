@@ -43,7 +43,7 @@ async def _close_open_posts(
     tasks = []
     for post_id in indexes[guild.id][user.id]:
         post: hikari.GuildThreadChannel = cast(
-            hikari.GuildThreadChannel, await guild.app.rest.fetch_channel(post_id)
+            hikari.GuildThreadChannel, await guild.appNp.rest.fetch_channel(post_id)
         )
         if post.is_archived:
             continue
@@ -73,6 +73,21 @@ async def on_thread_created(
         return
 
     plugin.guild_indexes[event.guild_id][event.thread.owner_id].add(event.thread.id)
+
+
+@recent_posts_plugin.bound_listener(channel_events.GuildThreadUpdateEvent)
+async def on_thread_updated(
+    plugin: RecentPostsPlugin, event: channel_events.GuildThreadCreateEvent
+):
+    if event.thread.parent_id != plugin.app.config["forumID"]:
+        return
+
+    users_posts = plugin.guild_indexes[event.guild_id][event.thread.owner_id]
+    if event.thread.id in users_posts and event.thread.is_archived:
+        users_posts.remove(event.thread.id)
+
+    elif event.thread.id not in users_posts and not event.thread.is_archived:
+        users_posts.add(event.thread.id)
 
 
 @recent_posts_plugin.bound_listener(channel_events.GuildThreadDeleteEvent)
