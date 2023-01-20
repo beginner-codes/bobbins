@@ -56,7 +56,7 @@ async def _close_open_posts(
 async def _close_post(post: hikari.GuildThreadChannel):
     await post.send("ℹ️ The member has left the server. Closing post.")
     await asyncio.sleep(5)
-    await post.app.rest.edit_channel(post, archived=True)
+    await post.app.rest.edit_channel(post, archived=True, locked=True)
 
 
 def _clear_guild_index_for_user(
