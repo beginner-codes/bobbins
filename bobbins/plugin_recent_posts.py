@@ -49,7 +49,7 @@ async def _close_open_posts(
     tasks = []
     for post_id in indexes[guild.id][user.id]:
         post: hikari.GuildThreadChannel = cast(
-            hikari.GuildThreadChannel, await guild.appNp.rest.fetch_channel(post_id)
+            hikari.GuildThreadChannel, await guild.app.rest.fetch_channel(post_id)
         )
         if post.is_archived:
             continue
