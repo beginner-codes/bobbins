@@ -152,12 +152,11 @@ async def _schedule_next_archive(posts: Iterable[hikari.GuildThreadChannel]):
         "further questions."
     )
     for post in posts:
+        history = await post.fetch_history()
         try:
-            last_message = await post.fetch_message(post.last_message_id)
-        except hikari.errors.NotFoundError:
+            last_messaged = now - history[0].created_at
+        except IndexError:
             last_messaged = now - post.created_at
-        else:
-            last_messaged = now - last_message.created_at
 
         if last_messaged > timedelta(days=7):
             _LOGGER.info(
@@ -188,7 +187,7 @@ def _archive_post(post: hikari.GuildThreadChannel, when: timedelta, message: str
 
         guild = post.get_guild()
         active_posts = await guild.app.rest.fetch_active_threads(guild)
-        # await _schedule_next_archive(_filter_forum_posts(forum_id, active_posts))
+        await _schedule_next_archive(_filter_forum_posts(forum_id, active_posts))
 
     def callback():
         task = _close_post(post, message)
