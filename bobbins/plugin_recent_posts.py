@@ -147,10 +147,6 @@ async def _schedule_next_archive(posts: Iterable[hikari.GuildThreadChannel]):
     next_post = None
     next_post_last_messaged = timedelta(days=0)
     now = datetime.utcnow().replace(tzinfo=timezone.utc)
-    message = (
-        "ℹ️ This post has been inactive for 7 days. {mention} feel free to reclaim this channel if you have any "
-        "further questions."
-    )
     for post in posts:
         history = await post.fetch_history()
         try:
@@ -162,10 +158,7 @@ async def _schedule_next_archive(posts: Iterable[hikari.GuildThreadChannel]):
             _LOGGER.info(
                 f"Closing {post.name!r} in {post.get_guild().name!r} because it's too old"
             )
-            await _close_post(
-                post,
-                message.format(mention=f"<@{post.owner_id}>"),
-            )
+            await _close_post(post, None)
 
         elif next_post is None or last_messaged > next_post_last_messaged:
             next_post = post
@@ -175,11 +168,10 @@ async def _schedule_next_archive(posts: Iterable[hikari.GuildThreadChannel]):
         _archive_post(
             next_post,
             timedelta(days=7) - next_post_last_messaged,
-            message.format(mention=f"<@{next_post.owner_id}>"),
         )
 
 
-def _archive_post(post: hikari.GuildThreadChannel, when: timedelta, message: str):
+def _archive_post(post: hikari.GuildThreadChannel, when: timedelta):
     loop = asyncio.get_running_loop()
 
     async def schedule():
@@ -190,7 +182,7 @@ def _archive_post(post: hikari.GuildThreadChannel, when: timedelta, message: str
         await _schedule_next_archive(_filter_forum_posts(forum_id, active_posts))
 
     def callback():
-        task = _close_post(post, message)
+        task = _close_post(post, None)
         loop.create_task(task)
         loop.create_task(schedule())
 
@@ -254,9 +246,11 @@ async def _show_posts_history(
 
 
 async def _close_post(
-    post: hikari.GuildThreadChannel, message: str, *, lock: bool = False
+    post: hikari.GuildThreadChannel, message: str | None = None, *, lock: bool = False
 ):
+    if message:
+        await post.send(message)
+        await asyncio.sleep(5)
+
     _LOGGER.debug(f"Closing {post.name!r}")
-    await post.send(message)
-    await asyncio.sleep(5)
     await post.app.rest.edit_channel(post, archived=True, locked=lock)
