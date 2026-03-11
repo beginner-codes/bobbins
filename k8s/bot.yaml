@@ -17,6 +17,13 @@ spec:
       containers:
         - name: bobbins-bot
           image: zzmmrmn/bobbins-bot:<IMAGE_VERSION>
+          resources:
+            requests:
+              cpu: 25m
+              memory: 96Mi
+            limits:
+              cpu: 100m
+              memory: 192Mi
           envFrom:
             - configMapRef:
                 name: bobbins-bot-config
